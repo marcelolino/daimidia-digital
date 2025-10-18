@@ -212,14 +212,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/media", isAuthenticated, requireAdmin, upload.single("file"), async (req: any, res) => {
+  app.post("/api/media", isAuthenticated, requireAdmin, upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]), async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
-      const file = req.file;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
-      if (!file) {
+      if (!files || !files.file || files.file.length === 0) {
         return res.status(400).json({ message: "File is required" });
       }
+
+      const file = files.file[0];
+      const thumbnail = files.thumbnail ? files.thumbnail[0] : null;
 
       const mediaData = {
         title: req.body.title,
@@ -228,6 +234,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         categoryId: req.body.categoryId || null,
         tags: req.body.tags ? JSON.parse(req.body.tags) : [],
         fileUrl: `/uploads/${file.filename}`,
+        thumbnailUrl: thumbnail ? `/uploads/${thumbnail.filename}` : null,
         fileName: file.originalname,
         fileSize: file.size.toString(),
         mimeType: file.mimetype,

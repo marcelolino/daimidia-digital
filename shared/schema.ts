@@ -55,6 +55,7 @@ export const media = pgTable("media", {
   categoryId: varchar("category_id").references(() => categories.id),
   tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
   fileUrl: text("file_url").notNull(),
+  thumbnailUrl: text("thumbnail_url"),
   fileName: text("file_name").notNull(),
   fileSize: text("file_size"),
   mimeType: text("mime_type"),

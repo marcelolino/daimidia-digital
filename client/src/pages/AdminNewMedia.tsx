@@ -42,6 +42,9 @@ export default function AdminNewMedia() {
       if (data.file) {
         formData.append("file", data.file);
       }
+      if (data.thumbnail) {
+        formData.append("thumbnail", data.thumbnail);
+      }
 
       const response = await fetch("/api/media", {
         method: "POST",

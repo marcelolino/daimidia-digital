@@ -110,7 +110,7 @@ export default function AdminMediaList() {
                         description={media.description || undefined}
                         type={media.type as MediaType}
                         tags={media.tags || []}
-                        thumbnailUrl={media.fileUrl}
+                        thumbnailUrl={media.thumbnailUrl || media.fileUrl}
                         onView={() => window.open(media.fileUrl, "_blank")}
                         onDownload={() => {
                           const link = document.createElement("a");

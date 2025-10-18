@@ -30,6 +30,7 @@ export type MediaFormData = {
   categoryId?: string;
   tags: string[];
   file?: File;
+  thumbnail?: File;
 };
 
 export function MediaForm({ onSubmit, onCancel, initialData }: MediaFormProps) {
@@ -40,6 +41,7 @@ export function MediaForm({ onSubmit, onCancel, initialData }: MediaFormProps) {
     categoryId: initialData?.categoryId,
     tags: initialData?.tags || [],
     file: initialData?.file,
+    thumbnail: initialData?.thumbnail,
   });
   const [tagInput, setTagInput] = useState("");
 
@@ -170,6 +172,19 @@ export function MediaForm({ onSubmit, onCancel, initialData }: MediaFormProps) {
           onFileSelect={(file) => setFormData({ ...formData, file })}
         />
       </div>
+
+      {formData.type === "video" && (
+        <div className="space-y-2">
+          <Label>Imagem Preview (Thumbnail)</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Opcional: Faça upload de uma imagem que será exibida como capa do vídeo
+          </p>
+          <UploadZone
+            onFileSelect={(file) => setFormData({ ...formData, thumbnail: file })}
+            accept="image/*"
+          />
+        </div>
+      )}
 
       <div className="flex gap-3 pt-4">
         <Button type="submit" className="flex-1" data-testid="button-submit">
