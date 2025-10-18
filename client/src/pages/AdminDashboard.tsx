@@ -1,18 +1,53 @@
+import { useEffect, useMemo } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { StatsCard } from "@/components/StatsCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Video, Image, FileImage, Layout } from "lucide-react";
-import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import type { Media } from "@shared/schema";
 
 export default function AdminDashboard() {
-  const [, setLocation] = useLocation();
+  const { user, isLoading, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
+      toast({
+        title: "Não autorizado",
+        description: isAuthenticated 
+          ? "Você precisa ser admin para acessar esta página."
+          : "Você precisa estar logado para acessar esta página.",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = isAuthenticated ? "/" : "/api/login";
+      }, 500);
+    }
+  }, [isAuthenticated, isLoading, user, toast]);
+
+  const { data: allMedia = [] } = useQuery<Media[]>({
+    queryKey: ["/api/media"],
+  });
+
+  const stats = useMemo(() => {
+    const total = allMedia.length;
+    const videos = allMedia.filter((m) => m.type === "video").length;
+    const images = allMedia.filter((m) => m.type === "image").length;
+    const logos = allMedia.filter((m) => m.type === "logo").length;
+    const banners = allMedia.filter((m) => m.type === "banner").length;
+    return { total, videos, images, logos, banners };
+  }, [allMedia]);
 
   const handleLogout = () => {
-    console.log("Logout");
-    //todo: remove mock functionality - implement real logout
-    setLocation("/");
+    window.location.href = "/api/logout";
   };
+
+  if (isLoading || !isAuthenticated || user?.role !== "admin") {
+    return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
+  }
 
   const style = {
     "--sidebar-width": "16rem",
@@ -37,32 +72,30 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
                   title="Total de Mídias"
-                  value={247}
+                  value={stats.total}
                   icon={Image}
-                  trend={{ value: 12, isPositive: true }}
                 />
                 <StatsCard
                   title="Vídeos"
-                  value={89}
+                  value={stats.videos}
                   icon={Video}
-                  description="36% do total"
+                  description={stats.total > 0 ? `${Math.round((stats.videos / stats.total) * 100)}% do total` : ""}
                 />
                 <StatsCard
                   title="Imagens"
-                  value={102}
+                  value={stats.images}
                   icon={Image}
-                  description="41% do total"
+                  description={stats.total > 0 ? `${Math.round((stats.images / stats.total) * 100)}% do total` : ""}
                 />
                 <StatsCard
                   title="Logos"
-                  value={34}
+                  value={stats.logos}
                   icon={FileImage}
                 />
                 <StatsCard
                   title="Banners"
-                  value={22}
+                  value={stats.banners}
                   icon={Layout}
-                  trend={{ value: -5, isPositive: false }}
                 />
               </div>
 
