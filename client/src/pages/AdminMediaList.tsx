@@ -112,6 +112,9 @@ export default function AdminMediaList() {
                         tags={media.tags || []}
                         thumbnailUrl={media.thumbnailUrl || media.fileUrl}
                         onView={() => window.open(media.fileUrl, "_blank")}
+                        onEdit={() => {
+                          window.location.href = `/admin/edit/${media.id}`;
+                        }}
                         onDownload={() => {
                           const link = document.createElement("a");
                           link.href = media.fileUrl;

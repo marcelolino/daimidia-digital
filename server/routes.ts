@@ -251,7 +251,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/media/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.patch("/api/media/:id", isAuthenticated, requireAdmin, upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "thumbnail", maxCount: 1 }
+  ]), async (req: any, res) => {
     try {
       const media = await storage.getMedia(req.params.id);
       
@@ -259,7 +262,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Media not found" });
       }
 
-      const updated = await storage.updateMedia(req.params.id, req.body);
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const file = files?.file ? files.file[0] : null;
+      const thumbnail = files?.thumbnail ? files.thumbnail[0] : null;
+
+      const updateData: any = {
+        title: req.body.title || media.title,
+        description: req.body.description !== undefined ? req.body.description : media.description,
+        type: req.body.type || media.type,
+        categoryId: req.body.categoryId !== undefined ? req.body.categoryId : media.categoryId,
+        tags: req.body.tags ? JSON.parse(req.body.tags) : media.tags,
+      };
+
+      if (file) {
+        updateData.fileUrl = `/uploads/${file.filename}`;
+        updateData.fileName = file.originalname;
+        updateData.fileSize = file.size.toString();
+        updateData.mimeType = file.mimetype;
+      }
+
+      if (thumbnail) {
+        updateData.thumbnailUrl = `/uploads/${thumbnail.filename}`;
+      }
+
+      const updated = await storage.updateMedia(req.params.id, updateData);
       res.json(updated);
     } catch (error) {
       console.error("Error updating media:", error);

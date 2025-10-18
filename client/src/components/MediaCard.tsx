@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Share2, Video, Image as ImageIcon, FileImage, Layout } from "lucide-react";
+import { Download, Eye, Share2, Video, Image as ImageIcon, FileImage, Layout, Edit } from "lucide-react";
 import { motion } from "framer-motion";
 
 export type MediaType = "video" | "image" | "logo" | "banner";
@@ -16,6 +16,8 @@ type MediaCardProps = {
   onView?: () => void;
   onDownload?: () => void;
   onShare?: () => void;
+  onEdit?: () => void;
+  showActions?: boolean;
 };
 
 const mediaIcons = {
@@ -42,6 +44,8 @@ export function MediaCard({
   onView,
   onDownload,
   onShare,
+  onEdit,
+  showActions = true,
 }: MediaCardProps) {
   const Icon = mediaIcons[type];
 
@@ -59,33 +63,45 @@ export function MediaCard({
           ) : (
             <Icon className="h-16 w-16 text-muted-foreground/30" />
           )}
-          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onView}
-              data-testid={`button-view-${id}`}
-            >
-              <Eye className="h-4 w-4 mr-1" />
-              Ver
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onDownload}
-              data-testid={`button-download-${id}`}
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={onShare}
-              data-testid={`button-share-${id}`}
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
-          </div>
+          {showActions && (
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onView}
+                data-testid={`button-view-${id}`}
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Ver
+              </Button>
+              {onEdit && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={onEdit}
+                  data-testid={`button-edit-${id}`}
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onDownload}
+                data-testid={`button-download-${id}`}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onShare}
+                data-testid={`button-share-${id}`}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </div>
         
         <div className="p-4 space-y-3">
