@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
 import { UploadZone } from "./UploadZone";
 import type { MediaType } from "./MediaCard";
+import type { Category } from "@shared/schema";
 
 type MediaFormProps = {
   onSubmit: (data: MediaFormData) => void;
@@ -25,6 +27,7 @@ export type MediaFormData = {
   title: string;
   description: string;
   type: MediaType;
+  categoryId?: string;
   tags: string[];
   file?: File;
 };
@@ -34,10 +37,15 @@ export function MediaForm({ onSubmit, onCancel, initialData }: MediaFormProps) {
     title: initialData?.title || "",
     description: initialData?.description || "",
     type: initialData?.type || "image",
+    categoryId: initialData?.categoryId,
     tags: initialData?.tags || [],
     file: initialData?.file,
   });
   const [tagInput, setTagInput] = useState("");
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
 
   const addTag = () => {
     if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
@@ -95,6 +103,28 @@ export function MediaForm({ onSubmit, onCancel, initialData }: MediaFormProps) {
             <SelectItem value="image">Imagem</SelectItem>
             <SelectItem value="logo">Logo</SelectItem>
             <SelectItem value="banner">Banner</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="category">Categoria</Label>
+        <Select
+          value={formData.categoryId || "none"}
+          onValueChange={(value) =>
+            setFormData({ ...formData, categoryId: value === "none" ? undefined : value })
+          }
+        >
+          <SelectTrigger id="category" data-testid="select-category">
+            <SelectValue placeholder="Selecione uma categoria" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sem categoria</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

@@ -1,9 +1,19 @@
-import { type User, type UpsertUser, type Media, type InsertMedia } from "@shared/schema";
+import { type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory } from "@shared/schema";
 
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<UpsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+  
+  // Category methods
+  getCategory(id: string): Promise<Category | undefined>;
+  getAllCategories(): Promise<Category[]>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, category: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
   
   // Media methods
   getMedia(id: string): Promise<Media | undefined>;

@@ -35,6 +35,9 @@ export default function AdminNewMedia() {
       formData.append("title", data.title);
       formData.append("description", data.description);
       formData.append("type", data.type);
+      if (data.categoryId) {
+        formData.append("categoryId", data.categoryId);
+      }
       formData.append("tags", JSON.stringify(data.tags));
       if (data.file) {
         formData.append("file", data.file);

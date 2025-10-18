@@ -10,7 +10,7 @@ import {
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { LayoutDashboard, Library, Plus, Settings, LogOut } from "lucide-react";
+import { LayoutDashboard, Library, Plus, Settings, LogOut, FolderTree, Users } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 
@@ -18,6 +18,8 @@ const menuItems = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
   { title: "Biblioteca", url: "/admin/media", icon: Library },
   { title: "Adicionar Mídia", url: "/admin/new", icon: Plus },
+  { title: "Categorias", url: "/admin/categories", icon: FolderTree },
+  { title: "Usuários", url: "/admin/users", icon: Users },
   { title: "Configurações", url: "/admin/settings", icon: Settings },
 ];
 
