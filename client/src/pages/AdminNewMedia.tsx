@@ -7,7 +7,7 @@ import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 
 export default function AdminNewMedia() {
   const [, setLocation] = useLocation();
@@ -24,7 +24,7 @@ export default function AdminNewMedia() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = isAuthenticated ? "/" : "/api/login";
+        window.location.href = isAuthenticated ? "/" : "/login";
       }, 500);
     }
   }, [isAuthenticated, isLoading, user, toast]);
@@ -74,8 +74,14 @@ export default function AdminNewMedia() {
     },
   });
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = "/login";
+    }
   };
 
   const handleSubmit = (data: MediaFormData) => {

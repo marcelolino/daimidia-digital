@@ -1,7 +1,7 @@
 import express, { type Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated, verifyPassword, hashPassword } from "./auth";
 import { requireAdmin } from "./middleware/requireAdmin";
 import multer from "multer";
 import { insertMediaSchema, insertCategorySchema } from "@shared/schema";
@@ -28,17 +28,63 @@ const upload = multer({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
-  await setupAuth(app);
+  setupAuth(app);
 
   // Serve uploaded files
   app.use("/uploads", express.static(uploadDir));
 
   // Auth routes
+  app.post("/api/auth/login", async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      }
+
+      const user = await storage.getUserByEmail(email);
+      
+      if (!user) {
+        return res.status(401).json({ message: "Email ou senha inválidos" });
+      }
+
+      const isValid = await verifyPassword(password, user.password);
+      
+      if (!isValid) {
+        return res.status(401).json({ message: "Email ou senha inválidos" });
+      }
+
+      req.session.userId = user.id;
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error during login:", error);
+      res.status(500).json({ message: "Erro ao fazer login" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Erro ao fazer logout" });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ message: "Logout realizado com sucesso" });
+    });
+  });
+
   app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const user = await storage.getUser(userId);
-      res.json(user);
+      
+      if (!user) {
+        return res.status(404).json({ message: "Usuário não encontrado" });
+      }
+      
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -49,7 +95,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/users", isAuthenticated, requireAdmin, async (req, res) => {
     try {
       const users = await storage.getAllUsers();
-      res.json(users);
+      const usersWithoutPasswords = users.map(({ password, ...user }) => user);
+      res.json(usersWithoutPasswords);
     } catch (error) {
       console.error("Error fetching users:", error);
       res.status(500).json({ message: "Failed to fetch users" });
@@ -62,10 +109,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json(user);
+      const { password, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  app.post("/api/users", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      if (existingUser) {
+        return res.status(409).json({ message: "Email já está em uso" });
+      }
+
+      const hashedPassword = await hashPassword(password);
+      const userData = {
+        email,
+        password: hashedPassword,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        role: role || "visitor",
+      };
+
+      const newUser = await storage.upsertUser(userData);
+      const { password: _, ...userWithoutPassword } = newUser;
+      res.status(201).json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "Failed to create user" });
     }
   });
 
@@ -76,8 +155,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "User not found" });
       }
 
-      const updated = await storage.updateUser(req.params.id, req.body);
-      res.json(updated);
+      const updateData: any = { ...req.body };
+      
+      if (req.body.password) {
+        updateData.password = await hashPassword(req.body.password);
+      }
+
+      const updated = await storage.updateUser(req.params.id, updateData);
+      if (updated) {
+        const { password: _, ...userWithoutPassword } = updated;
+        res.json(userWithoutPassword);
+      } else {
+        res.status(404).json({ message: "User not found" });
+      }
     } catch (error) {
       console.error("Error updating user:", error);
       res.status(500).json({ message: "Failed to update user" });
@@ -86,7 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/users/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       
       if (userId === req.params.id) {
         return res.status(400).json({ message: "Cannot delete your own account" });
@@ -217,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     { name: "thumbnail", maxCount: 1 }
   ]), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.session.userId;
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       
       if (!files || !files.file || files.file.length === 0) {

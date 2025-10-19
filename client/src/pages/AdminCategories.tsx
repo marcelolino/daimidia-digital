@@ -51,7 +51,7 @@ export default function AdminCategories() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = isAuthenticated ? "/" : "/api/login";
+        window.location.href = isAuthenticated ? "/" : "/login";
       }, 500);
     }
   }, [isAuthenticated, isLoading, user, toast]);
@@ -127,8 +127,14 @@ export default function AdminCategories() {
     },
   });
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = "/login";
+    }
   };
 
   const resetForm = () => {

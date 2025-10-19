@@ -7,6 +7,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Info, Database, Palette } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AdminSettings() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -22,13 +23,19 @@ export default function AdminSettings() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = isAuthenticated ? "/" : "/api/login";
+        window.location.href = isAuthenticated ? "/" : "/login";
       }, 500);
     }
   }, [isAuthenticated, isLoading, user, toast]);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = "/login";
+    }
   };
 
   if (isLoading || !isAuthenticated || user?.role !== "admin") {

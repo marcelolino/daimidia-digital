@@ -3,6 +3,7 @@ import { type User, type UpsertUser, type Media, type InsertMedia, type Category
 export interface IStorage {
   // User methods
   getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
   upsertUser(user: UpsertUser): Promise<User>;
   updateUser(id: string, user: Partial<UpsertUser>): Promise<User | undefined>;

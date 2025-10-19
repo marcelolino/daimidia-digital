@@ -3,7 +3,7 @@ import { storage } from "../storage";
 
 export const requireAdmin: RequestHandler = async (req: any, res, next) => {
   try {
-    const userId = req.user?.claims?.sub;
+    const userId = req.session?.userId;
     
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });

@@ -7,6 +7,7 @@ import { Video, Image, FileImage, Layout } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { Media } from "@shared/schema";
 
 export default function AdminDashboard() {
@@ -23,7 +24,7 @@ export default function AdminDashboard() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = isAuthenticated ? "/" : "/api/login";
+        window.location.href = isAuthenticated ? "/" : "/login";
       }, 500);
     }
   }, [isAuthenticated, isLoading, user, toast]);
@@ -41,8 +42,14 @@ export default function AdminDashboard() {
     return { total, videos, images, logos, banners };
   }, [allMedia]);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      await apiRequest("POST", "/api/auth/logout");
+      window.location.href = "/login";
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = "/login";
+    }
   };
 
   if (isLoading || !isAuthenticated || user?.role !== "admin") {
