@@ -1,7 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Download, Eye, Share2, Video, Image as ImageIcon, FileImage, Layout, Edit } from "lucide-react";
+import { Download, Eye, Share2, Video, Image as ImageIcon, FileImage, Layout, Edit, Trash2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 export type MediaType = "video" | "image" | "logo" | "banner";
@@ -17,6 +17,7 @@ type MediaCardProps = {
   onDownload?: () => void;
   onShare?: () => void;
   onEdit?: () => void;
+  onDelete?: () => void;
   showActions?: boolean;
 };
 
@@ -45,6 +46,7 @@ export function MediaCard({
   onDownload,
   onShare,
   onEdit,
+  onDelete,
   showActions = true,
 }: MediaCardProps) {
   const Icon = mediaIcons[type];
@@ -100,6 +102,16 @@ export function MediaCard({
               >
                 <Share2 className="h-4 w-4" />
               </Button>
+              {onDelete && (
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={onDelete}
+                  data-testid={`button-delete-${id}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           )}
         </div>

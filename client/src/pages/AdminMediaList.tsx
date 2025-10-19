@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Media } from "@shared/schema";
 
 export default function AdminMediaList() {
@@ -37,6 +38,32 @@ export default function AdminMediaList() {
   const { data: allMedia = [], isLoading: mediaLoading } = useQuery<Media[]>({
     queryKey: ["/api/media"],
   });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/media/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/media"] });
+      toast({
+        title: "Mídia excluída",
+        description: "A mídia foi excluída com sucesso.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao excluir",
+        description: "Não foi possível excluir a mídia.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleDelete = (id: string, title: string) => {
+    if (window.confirm(`Tem certeza que deseja excluir "${title}"? Esta ação não pode ser desfeita.`)) {
+      deleteMutation.mutate(id);
+    }
+  };
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
@@ -125,6 +152,7 @@ export default function AdminMediaList() {
                           navigator.clipboard.writeText(window.location.origin + media.fileUrl);
                           toast({ title: "Link copiado!" });
                         }}
+                        onDelete={() => handleDelete(media.id, media.title)}
                       />
                     ))
                   ) : (
