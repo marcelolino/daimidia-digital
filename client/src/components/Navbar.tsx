@@ -35,12 +35,12 @@ export function Navbar({ isAuthenticated = false, isAdmin = false, userName, onL
           <ThemeToggle />
           
           {!isAuthenticated ? (
-            <a href="/api/login">
+            <Link href="/login">
               <Button data-testid="button-login">
                 <LogIn className="h-4 w-4 mr-2" />
                 Entrar
               </Button>
-            </a>
+            </Link>
           ) : (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
