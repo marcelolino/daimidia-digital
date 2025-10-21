@@ -1,6 +1,6 @@
 import { eq, or, ilike, sql } from "drizzle-orm";
 import { db } from "./db";
-import { users, media, categories, type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory } from "@shared/schema";
+import { users, media, categories, systemSettings, type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory, type SystemSettings, type InsertSystemSettings } from "@shared/schema";
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
@@ -123,6 +123,31 @@ export class DbStorage implements IStorage {
         )
       )
       .orderBy(sql`${media.createdAt} DESC`);
+  }
+
+  // System settings methods
+  async getSystemSettings(): Promise<SystemSettings | undefined> {
+    const result = await db.select().from(systemSettings).limit(1);
+    return result[0];
+  }
+
+  async updateSystemSettings(updateData: Partial<InsertSystemSettings>): Promise<SystemSettings> {
+    const existing = await this.getSystemSettings();
+    
+    if (existing) {
+      const result = await db
+        .update(systemSettings)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(systemSettings.id, existing.id))
+        .returning();
+      return result[0];
+    } else {
+      const result = await db
+        .insert(systemSettings)
+        .values(updateData)
+        .returning();
+      return result[0];
+    }
   }
 }
 

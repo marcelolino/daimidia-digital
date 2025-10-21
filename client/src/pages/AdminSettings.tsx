@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -6,12 +6,45 @@ import { AdminSidebar } from "@/components/AdminSidebar";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Info, Database, Palette } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Info, Database, Palette, Image, Upload } from "lucide-react";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import type { SystemSettings } from "@shared/schema";
 
 export default function AdminSettings() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+
+  const { data: settings } = useQuery<SystemSettings>({
+    queryKey: ["/api/settings"],
+  });
+
+  const uploadLogoMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("logo", file);
+      return apiRequest("POST", "/api/settings/logo", formData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({
+        title: "Logo atualizada",
+        description: "A logo foi atualizada com sucesso!",
+      });
+      setLogoFile(null);
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao fazer upload",
+        description: "Não foi possível atualizar a logo.",
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -35,6 +68,13 @@ export default function AdminSettings() {
     } catch (error) {
       console.error("Logout error:", error);
       window.location.href = "/login";
+    }
+  };
+
+  const handleLogoUpload = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (logoFile) {
+      uploadLogoMutation.mutate(logoFile);
     }
   };
 
@@ -129,6 +169,59 @@ export default function AdminSettings() {
                         <ThemeToggle />
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Image className="h-5 w-5" />
+                      <CardTitle>Logo da Empresa</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Configure a logo que aparecerá na página inicial
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {settings?.logoUrl && (
+                      <div className="flex items-center gap-4 p-4 border rounded-lg">
+                        <img 
+                          src={settings.logoUrl} 
+                          alt="Logo atual" 
+                          className="h-16 w-auto object-contain"
+                          data-testid="img-current-logo"
+                        />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">Logo atual</p>
+                          <p className="text-xs text-muted-foreground">
+                            Esta logo será exibida na página inicial
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <form onSubmit={handleLogoUpload} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="logo-upload">
+                          {settings?.logoUrl ? "Atualizar logo" : "Fazer upload da logo"}
+                        </Label>
+                        <Input
+                          id="logo-upload"
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                          data-testid="input-logo-file"
+                        />
+                      </div>
+                      <Button 
+                        type="submit" 
+                        disabled={!logoFile || uploadLogoMutation.isPending}
+                        data-testid="button-upload-logo"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadLogoMutation.isPending ? "Enviando..." : "Fazer Upload"}
+                      </Button>
+                    </form>
                   </CardContent>
                 </Card>
               </div>

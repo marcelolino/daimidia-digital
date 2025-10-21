@@ -1,4 +1,4 @@
-import { type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory } from "@shared/schema";
+import { type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory, type SystemSettings, type InsertSystemSettings } from "@shared/schema";
 
 export interface IStorage {
   // User methods
@@ -24,6 +24,10 @@ export interface IStorage {
   updateMedia(id: string, media: Partial<InsertMedia>): Promise<Media | undefined>;
   deleteMedia(id: string): Promise<boolean>;
   searchMedia(query: string): Promise<Media[]>;
+  
+  // System settings methods
+  getSystemSettings(): Promise<SystemSettings | undefined>;
+  updateSystemSettings(settings: Partial<InsertSystemSettings>): Promise<SystemSettings>;
 }
 
 export { storage } from "./db-storage";

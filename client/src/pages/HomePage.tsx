@@ -6,7 +6,7 @@ import { MediaCard, type MediaType } from "@/components/MediaCard";
 import { motion } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import type { Media } from "@shared/schema";
+import type { Media, SystemSettings } from "@shared/schema";
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
@@ -15,6 +15,10 @@ export default function HomePage() {
 
   const { data: allMedia = [], isLoading } = useQuery<Media[]>({
     queryKey: ["/api/media"],
+  });
+
+  const { data: settings } = useQuery<SystemSettings>({
+    queryKey: ["/api/settings"],
   });
 
   const filteredMedia = useMemo(() => {
@@ -43,6 +47,17 @@ export default function HomePage() {
       
       <main className="container mx-auto px-4 py-8 space-y-6">
         <div className="space-y-4">
+          {settings?.logoUrl && (
+            <div className="flex justify-center mb-6" data-testid="section-company-logo">
+              <img 
+                src={settings.logoUrl} 
+                alt="Logo da empresa" 
+                className="h-24 w-auto object-contain"
+                data-testid="img-company-logo"
+              />
+            </div>
+          )}
+          
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
             <div>
               <h1 className="text-4xl font-display font-bold mb-2">Catálogo de Mídia</h1>

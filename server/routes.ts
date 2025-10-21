@@ -399,6 +399,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // System settings routes
+  app.get("/api/settings", async (req, res) => {
+    try {
+      const settings = await storage.getSystemSettings();
+      res.json(settings || { id: null, logoUrl: null, updatedAt: null });
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+      res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/settings/logo", isAuthenticated, requireAdmin, upload.single("logo"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Logo file is required" });
+      }
+
+      // Validate file type (only allow images)
+      const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        // Delete the uploaded file since it's not valid
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Only image files are allowed (JPEG, PNG, GIF, WebP, SVG)" });
+      }
+
+      // Get current settings to remove old logo file
+      const currentSettings = await storage.getSystemSettings();
+      if (currentSettings?.logoUrl) {
+        try {
+          const oldLogoPath = path.join(process.cwd(), currentSettings.logoUrl.replace(/^\//, ''));
+          if (fs.existsSync(oldLogoPath)) {
+            fs.unlinkSync(oldLogoPath);
+          }
+        } catch (error) {
+          console.error("Error deleting old logo file:", error);
+          // Continue with upload even if old file deletion fails
+        }
+      }
+
+      const logoUrl = `/uploads/${req.file.filename}`;
+      const settings = await storage.updateSystemSettings({ logoUrl });
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Error uploading logo:", error);
+      res.status(500).json({ message: "Failed to upload logo" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
