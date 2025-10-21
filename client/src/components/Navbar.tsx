@@ -16,17 +16,27 @@ type NavbarProps = {
   isAdmin?: boolean;
   userName?: string;
   onLogout?: () => void;
+  logoUrl?: string | null;
 };
 
-export function Navbar({ isAuthenticated = false, isAdmin = false, userName, onLogout }: NavbarProps) {
+export function Navbar({ isAuthenticated = false, isAdmin = false, userName, onLogout, logoUrl }: NavbarProps) {
   return (
     <nav className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" data-testid="link-home">
           <div className="flex items-center gap-2 hover-elevate active-elevate-2 px-3 py-2 rounded-lg cursor-pointer">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-display font-bold text-lg">D</span>
-            </div>
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt="Logo" 
+                className="h-8 w-auto object-contain"
+                data-testid="img-navbar-logo"
+              />
+            ) : (
+              <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-display font-bold text-lg">D</span>
+              </div>
+            )}
             <span className="font-display font-bold text-2xl">Daimidia</span>
           </div>
         </Link>
