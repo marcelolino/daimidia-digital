@@ -6,13 +6,20 @@ import { MediaCard, type MediaType } from "@/components/MediaCard";
 import { FilterBar } from "@/components/FilterBar";
 import { SearchInput } from "@/components/SearchInput";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Media } from "@shared/schema";
+import type { Media, Category } from "@shared/schema";
+import { prepareMediaForExport, downloadCSV, downloadExcel } from "@/lib/exportUtils";
 
 export default function AdminMediaList() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -37,6 +44,10 @@ export default function AdminMediaList() {
 
   const { data: allMedia = [], isLoading: mediaLoading } = useQuery<Media[]>({
     queryKey: ["/api/media"],
+  });
+
+  const { data: categories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
   });
 
   const deleteMutation = useMutation({
@@ -86,6 +97,24 @@ export default function AdminMediaList() {
     });
   }, [allMedia, selectedType, searchQuery]);
 
+  const handleExportCSV = () => {
+    const exportData = prepareMediaForExport(filteredMedia, categories);
+    downloadCSV(exportData);
+    toast({
+      title: "Exportado com sucesso",
+      description: `${filteredMedia.length} itens exportados para CSV.`,
+    });
+  };
+
+  const handleExportExcel = () => {
+    const exportData = prepareMediaForExport(filteredMedia, categories);
+    downloadExcel(exportData);
+    toast({
+      title: "Exportado com sucesso",
+      description: `${filteredMedia.length} itens exportados para Excel.`,
+    });
+  };
+
   if (isLoading || !isAuthenticated || user?.role !== "admin") {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
@@ -105,17 +134,37 @@ export default function AdminMediaList() {
           </header>
           <main className="flex-1 overflow-auto p-8">
             <div className="space-y-6 max-w-7xl mx-auto">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <h1 className="text-3xl font-display font-bold mb-2">Biblioteca de Mídia</h1>
                   <p className="text-muted-foreground">Gerencie todas as suas mídias</p>
                 </div>
-                <Link href="/admin/new">
-                  <Button data-testid="button-new-media">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Mídia
-                  </Button>
-                </Link>
+                <div className="flex gap-2">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" data-testid="button-export">
+                        <Download className="h-4 w-4 mr-2" />
+                        Exportar
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportCSV} data-testid="menu-export-csv">
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportExcel} data-testid="menu-export-excel">
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        Exportar Excel
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                  <Link href="/admin/new">
+                    <Button data-testid="button-new-media">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Nova Mídia
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">
