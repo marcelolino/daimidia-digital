@@ -3,12 +3,12 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 import { StatsCard } from "@/components/StatsCard";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Video, Image, FileImage, Layout } from "lucide-react";
+import { Video, Image, FileImage, Layout, Eye } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import type { Media } from "@shared/schema";
+import type { Media, SystemSettings } from "@shared/schema";
 
 export default function AdminDashboard() {
   const { user, isLoading, isAuthenticated } = useAuth();
@@ -31,6 +31,10 @@ export default function AdminDashboard() {
 
   const { data: allMedia = [] } = useQuery<Media[]>({
     queryKey: ["/api/media"],
+  });
+
+  const { data: settings } = useQuery<SystemSettings>({
+    queryKey: ["/api/settings"],
   });
 
   const stats = useMemo(() => {
@@ -77,6 +81,12 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatsCard
+                  title="Visualizações da Página"
+                  value={settings?.pageViews || 0}
+                  icon={Eye}
+                  description="Total de visitas"
+                />
                 <StatsCard
                   title="Total de Mídias"
                   value={stats.total}

@@ -403,10 +403,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/settings", async (req, res) => {
     try {
       const settings = await storage.getSystemSettings();
-      res.json(settings || { id: null, logoUrl: null, updatedAt: null });
+      res.json(settings || { id: null, logoUrl: null, pageViews: 0, updatedAt: null });
     } catch (error) {
       console.error("Error fetching settings:", error);
       res.status(500).json({ message: "Failed to fetch settings" });
+    }
+  });
+
+  app.post("/api/analytics/page-view", async (req, res) => {
+    try {
+      let settings = await storage.getSystemSettings();
+      
+      if (!settings) {
+        settings = await storage.updateSystemSettings({ pageViews: 1 });
+      } else {
+        const currentViews = settings.pageViews || 0;
+        settings = await storage.updateSystemSettings({ pageViews: currentViews + 1 });
+      }
+      
+      res.json({ pageViews: settings.pageViews });
+    } catch (error) {
+      console.error("Error incrementing page view:", error);
+      res.status(500).json({ message: "Failed to increment page view" });
     }
   });
 

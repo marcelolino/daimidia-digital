@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, index, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, index, jsonb, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -76,6 +76,7 @@ export type Media = typeof media.$inferSelect;
 export const systemSettings = pgTable("system_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   logoUrl: text("logo_url"),
+  pageViews: integer("page_views").notNull().default(0),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { FilterBar } from "@/components/FilterBar";
 import { SearchInput } from "@/components/SearchInput";
@@ -12,6 +12,15 @@ export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const [selectedType, setSelectedType] = useState<MediaType | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    fetch("/api/analytics/page-view", {
+      method: "POST",
+      credentials: "include",
+    }).catch((error) => {
+      console.error("Failed to track page view:", error);
+    });
+  }, []);
 
   const { data: allMedia = [], isLoading } = useQuery<Media[]>({
     queryKey: ["/api/media"],
