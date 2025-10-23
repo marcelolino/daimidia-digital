@@ -9,7 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Info, Database, Palette, Image, Upload, Download } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Info, Database, Palette, Image, Upload, Download, AlertTriangle } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { SystemSettings } from "@shared/schema";
@@ -18,6 +28,9 @@ export default function AdminSettings() {
   const { user, isLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [backupFile, setBackupFile] = useState<File | null>(null);
+  const [showRestoreDialog, setShowRestoreDialog] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const { data: settings } = useQuery<SystemSettings>({
     queryKey: ["/api/settings"],
@@ -140,6 +153,51 @@ export default function AdminSettings() {
     }
   };
 
+  const handleRestoreDatabase = async () => {
+    if (!backupFile) return;
+
+    setIsRestoring(true);
+    setShowRestoreDialog(false);
+
+    try {
+      const formData = new FormData();
+      formData.append("backup", backupFile);
+
+      const response = await fetch("/api/database/restore", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Restore failed");
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Banco restaurado com sucesso!",
+        description: `${result.recordsRestored} registros foram restaurados.`,
+      });
+
+      setBackupFile(null);
+      
+      // Recarregar a página após 2 segundos
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      toast({
+        title: "Erro ao restaurar",
+        description: error.message || "Não foi possível restaurar o banco de dados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRestoring(false);
+    }
+  };
+
   if (isLoading || !isAuthenticated || user?.role !== "admin") {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
@@ -149,6 +207,7 @@ export default function AdminSettings() {
   };
 
   return (
+    <>
     <SidebarProvider style={style as React.CSSProperties}>
       <div className="flex h-screen w-full">
         <AdminSidebar onLogout={handleLogout} />
@@ -239,6 +298,39 @@ export default function AdminSettings() {
                         Crie um backup completo do banco de dados em formato SQL ou JSON
                       </p>
                     </div>
+
+                    <div className="pt-3 border-t space-y-3">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-destructive" />
+                        <p className="text-sm font-medium">Restaurar Backup</p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="backup-file">
+                          Arquivo de Backup (SQL ou JSON)
+                        </Label>
+                        <Input
+                          id="backup-file"
+                          type="file"
+                          accept=".sql,.json,application/sql,application/json"
+                          onChange={(e) => setBackupFile(e.target.files?.[0] || null)}
+                          disabled={isRestoring}
+                          data-testid="input-backup-file"
+                        />
+                      </div>
+                      <Button
+                        variant="destructive"
+                        onClick={() => setShowRestoreDialog(true)}
+                        disabled={!backupFile || isRestoring}
+                        className="w-full"
+                        data-testid="button-restore-backup"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isRestoring ? "Restaurando..." : "Restaurar Banco de Dados"}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">
+                        ⚠️ <strong>ATENÇÃO:</strong> Esta ação irá sobrescrever todos os dados atuais!
+                      </p>
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -321,5 +413,47 @@ export default function AdminSettings() {
         </div>
       </div>
     </SidebarProvider>
+
+      <AlertDialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Confirmar Restauração do Banco de Dados
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p className="font-semibold text-foreground">
+                Esta ação irá SUBSTITUIR TODOS os dados atuais!
+              </p>
+              <p>Isso inclui:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Todos os usuários (exceto senhas no JSON)</li>
+                <li>Todas as categorias</li>
+                <li>Todas as mídias</li>
+                <li>Configurações do sistema</li>
+              </ul>
+              <p className="text-destructive font-medium mt-3">
+                ⚠️ Esta operação NÃO pode ser desfeita!
+              </p>
+              <p className="text-muted-foreground text-xs mt-2">
+                Certifique-se de ter um backup dos dados atuais antes de continuar.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-restore">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRestoreDatabase}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-restore"
+            >
+              Sim, Restaurar Agora
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

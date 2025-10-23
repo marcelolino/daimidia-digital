@@ -499,6 +499,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/database/restore", isAuthenticated, requireAdmin, upload.single("backup"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Backup file is required" });
+      }
+
+      const fileContent = fs.readFileSync(req.file.path, 'utf-8');
+      const fileExtension = path.extname(req.file.originalname).toLowerCase();
+
+      let recordsRestored = 0;
+
+      if (fileExtension === '.json') {
+        const { restoreFromJSON } = await import("./db-restore");
+        recordsRestored = await restoreFromJSON(fileContent);
+      } else if (fileExtension === '.sql') {
+        const { restoreFromSQL } = await import("./db-restore");
+        recordsRestored = await restoreFromSQL(fileContent);
+      } else {
+        // Limpar arquivo temporário
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Invalid file format. Please use .json or .sql files" });
+      }
+
+      // Limpar arquivo temporário após processamento
+      fs.unlinkSync(req.file.path);
+
+      res.json({ 
+        message: "Database restored successfully", 
+        recordsRestored 
+      });
+    } catch (error: any) {
+      console.error("Error restoring database:", error);
+      
+      // Limpar arquivo temporário em caso de erro
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      res.status(500).json({ 
+        message: error.message || "Failed to restore database" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
