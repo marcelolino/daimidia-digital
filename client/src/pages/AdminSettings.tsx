@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Info, Database, Palette, Image, Upload } from "lucide-react";
+import { Info, Database, Palette, Image, Upload, Download } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { SystemSettings } from "@shared/schema";
@@ -78,6 +78,68 @@ export default function AdminSettings() {
     }
   };
 
+  const handleExportSQL = async () => {
+    try {
+      const response = await fetch("/api/database/export/sql", {
+        credentials: "include",
+      });
+      
+      if (!response.ok) throw new Error("Export failed");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `database-backup-${new Date().toISOString().split('T')[0]}.sql`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Backup SQL criado",
+        description: "O backup do banco de dados foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao exportar",
+        description: "Não foi possível criar o backup do banco de dados.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleExportJSON = async () => {
+    try {
+      const response = await fetch("/api/database/export/json", {
+        credentials: "include",
+      });
+      
+      if (!response.ok) throw new Error("Export failed");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `database-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Backup JSON criado",
+        description: "O backup do banco de dados foi baixado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro ao exportar",
+        description: "Não foi possível criar o backup do banco de dados.",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (isLoading || !isAuthenticated || user?.role !== "admin") {
     return <div className="flex items-center justify-center min-h-screen">Carregando...</div>;
   }
@@ -139,14 +201,43 @@ export default function AdminSettings() {
                       Informações sobre o armazenamento
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Tipo</span>
-                      <Badge variant="secondary">PostgreSQL</Badge>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Tipo</span>
+                        <Badge variant="secondary">PostgreSQL 16</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-muted-foreground">Status</span>
+                        <Badge variant="default">Conectado</Badge>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Status</span>
-                      <Badge variant="default">Conectado</Badge>
+                    
+                    <div className="pt-3 border-t space-y-2">
+                      <p className="text-sm font-medium mb-3">Exportar Backup</p>
+                      <div className="flex gap-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={handleExportSQL}
+                          className="flex-1"
+                          data-testid="button-export-sql"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Exportar SQL
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          onClick={handleExportJSON}
+                          className="flex-1"
+                          data-testid="button-export-json"
+                        >
+                          <Download className="h-4 w-4 mr-2" />
+                          Exportar JSON
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Crie um backup completo do banco de dados em formato SQL ou JSON
+                      </p>
                     </div>
                   </CardContent>
                 </Card>

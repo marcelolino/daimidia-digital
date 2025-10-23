@@ -448,6 +448,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Database export routes
+  app.get("/api/database/export/sql", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { generateDatabaseExport } = await import("./db-export");
+      const exportSQL = await generateDatabaseExport();
+      
+      const filename = `database-backup-${new Date().toISOString().split('T')[0]}.sql`;
+      
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(exportSQL);
+    } catch (error) {
+      console.error("Error exporting database:", error);
+      res.status(500).json({ message: "Failed to export database" });
+    }
+  });
+
+  app.get("/api/database/export/json", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const { generateDatabaseExportJSON } = await import("./db-export");
+      const exportJSON = await generateDatabaseExportJSON();
+      
+      const filename = `database-backup-${new Date().toISOString().split('T')[0]}.json`;
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(exportJSON);
+    } catch (error) {
+      console.error("Error exporting database:", error);
+      res.status(500).json({ message: "Failed to export database" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
