@@ -14,13 +14,15 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --only=production
+
+# Instalar TODAS as dependências (incluindo devDependencies como vite)
+# porque o servidor em produção usa o vite para servir arquivos estáticos
+RUN npm ci
 
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/server ./server
 COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 RUN mkdir -p uploads
 
