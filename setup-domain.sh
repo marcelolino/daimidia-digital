@@ -10,10 +10,10 @@ if [ -z "$1" ] || [ -z "$2" ]; then
     echo "❌ Uso incorreto!"
     echo ""
     echo "Como usar:"
-    echo "  ./setup-domain.sh SEU_DOMINIO.com seu@email.com"
+    echo "  ./setup-domain.sh daimidia.seucodigo.shop daimidia7@gmail.com"
     echo ""
     echo "Exemplo:"
-    echo "  ./setup-domain.sh meusite.com contato@meusite.com"
+    echo "  ./setup-domain.sh daimidia.seucodigo.shop daimidia7@gmail.com"
     echo ""
     exit 1
 fi
