@@ -107,6 +107,8 @@ echo "✅ Build concluído!"
 echo ""
 
 echo "📊 Passo 7: Executando migrações..."
+# Carregar variáveis de ambiente
+export $(cat .env | grep -v '^#' | xargs)
 npm run db:push
 
 echo ""
@@ -116,7 +118,7 @@ mkdir -p logs
 echo ""
 echo "🚀 Passo 8: Iniciando aplicação com PM2..."
 pm2 delete app 2>/dev/null || true
-pm2 start ecosystem.config.js
+pm2 start ecosystem.config.cjs
 
 echo ""
 echo "💾 Salvando configuração PM2..."
