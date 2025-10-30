@@ -93,8 +93,14 @@ Preferred communication style: Simple, everyday language.
 
 **Third-Party Services**
 - Replit Auth (OIDC provider) for authentication
-- Neon serverless PostgreSQL for database hosting
+- Neon serverless PostgreSQL for database hosting (or Vercel Postgres for production)
 - Google Fonts (Inter, Space Grotesk) for typography
+
+**Deployment Options**
+- Development: Replit platform with built-in database
+- Production: Render.com for hosting + Vercel Postgres for database
+- Alternative: Docker deployment (see DEPLOY-DOCKER.md)
+- Alternative: PM2 deployment (see DEPLOY-PM2.md)
 
 **Key Libraries**
 - `@neondatabase/serverless`: Neon database client
