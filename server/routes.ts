@@ -8,6 +8,7 @@ import { insertMediaSchema, insertCategorySchema } from "@shared/schema";
 import path from "path";
 import fs from "fs";
 import { z } from "zod";
+import passport from "passport";
 
 // Configure multer for file uploads
 const uploadDir = path.join(process.cwd(), "uploads");
@@ -35,7 +36,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Auth routes using Passport
   app.post("/api/auth/login", (req: any, res, next) => {
-    const passport = require("passport");
     passport.authenticate("local", (err: any, user: any, info: any) => {
       if (err) {
         console.error("Login error:", err);
