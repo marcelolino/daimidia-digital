@@ -33,62 +33,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve uploaded files
   app.use("/uploads", express.static(uploadDir));
 
-  // Auth routes
-  app.post("/api/auth/login", async (req: any, res) => {
-    try {
-      const { email, password } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email e senha são obrigatórios" });
+  // Auth routes using Passport
+  app.post("/api/auth/login", (req: any, res, next) => {
+    const passport = require("passport");
+    passport.authenticate("local", (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("Login error:", err);
+        return res.status(500).json({ message: "Erro ao fazer login" });
       }
-
-      const user = await storage.getUserByEmail(email);
-      
       if (!user) {
-        return res.status(401).json({ message: "Email ou senha inválidos" });
+        return res.status(401).json({ message: info?.message || "Email ou senha inválidos" });
       }
-
-      const isValid = await verifyPassword(password, user.password);
       
-      if (!isValid) {
-        return res.status(401).json({ message: "Email ou senha inválidos" });
-      }
-
-      req.session.userId = user.id;
-      
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error during login:", error);
-      res.status(500).json({ message: "Erro ao fazer login" });
-    }
+      req.login(user, (err: any) => {
+        if (err) {
+          console.error("Session error:", err);
+          return res.status(500).json({ message: "Erro ao criar sessão" });
+        }
+        
+        const { password: _, ...userWithoutPassword } = user;
+        return res.json(userWithoutPassword);
+      });
+    })(req, res, next);
   });
 
-  app.post("/api/auth/logout", (req: any, res) => {
-    req.session.destroy((err: any) => {
+  app.post("/api/auth/logout", (req: any, res, next) => {
+    req.logout((err: any) => {
       if (err) {
+        console.error("Logout error:", err);
         return res.status(500).json({ message: "Erro ao fazer logout" });
       }
-      res.clearCookie("connect.sid");
       res.json({ message: "Logout realizado com sucesso" });
     });
   });
 
-  app.get("/api/auth/user", isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.session.userId;
-      const user = await storage.getUser(userId);
-      
-      if (!user) {
-        return res.status(404).json({ message: "Usuário não encontrado" });
-      }
-      
-      const { password: _, ...userWithoutPassword } = user;
-      res.json(userWithoutPassword);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+  app.get("/api/auth/user", isAuthenticated, (req: any, res) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Não autenticado" });
     }
+    
+    const { password: _, ...userWithoutPassword } = req.user;
+    res.json(userWithoutPassword);
   });
 
   // User management routes (Admin only)
