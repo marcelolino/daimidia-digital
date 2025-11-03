@@ -115,6 +115,38 @@ Copie e execute o comando que aparecer.
 
 ---
 
+## 🔧 aaPanel: Configuração Especial
+
+Se você está usando **aaPanel**, siga estas instruções adicionais:
+
+### Configurar Proxy Reverso
+
+1. No aaPanel: **Websites** → [Seu Site] → **Proxy Reverso**
+2. Configure:
+   - URL de Destino: `http://127.0.0.1:5000`
+   - ☑️ Enviar Host Header
+
+3. **CRÍTICO:** Adicione na configuração personalizada:
+
+```nginx
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header Host $http_host;
+```
+
+4. Reinicie:
+```bash
+sudo systemctl restart nginx
+pm2 restart all
+```
+
+**📖 Guia completo aaPanel:** [AAPANEL-NGINX-CONFIG.md](./AAPANEL-NGINX-CONFIG.md)
+
+**⚠️ Problema "Não Autorizado"?** Veja: [TROUBLESHOOTING-LOGIN.md](./TROUBLESHOOTING-LOGIN.md)
+
+---
+
 ## 🌐 Adicionar Domínio com HTTPS (Opcional)
 
 ### Passo 1: Configure o DNS

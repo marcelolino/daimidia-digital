@@ -8,6 +8,8 @@ import pg from "pg";
 const PgStore = connectPgSimple(expressSession);
 
 export function setupAuth(app: Express) {
+  // CRÍTICO: Trust proxy para funcionar com Nginx/aaPanel
+  // Permite que o Express reconheça o protocolo HTTPS através do proxy
   app.set("trust proxy", 1);
   
   const pool = new pg.Pool({
@@ -24,10 +26,13 @@ export function setupAuth(app: Express) {
       secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
       resave: false,
       saveUninitialized: false,
+      proxy: true, // CRÍTICO: necessário quando atrás de proxy
       cookie: {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
         maxAge: 30 * 24 * 60 * 60 * 1000,
+        sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
+        // Não defina domain - deixe o navegador lidar com isso
       },
     })
   );
