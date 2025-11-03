@@ -11,11 +11,11 @@ export function setupAuth(app: Express) {
   // CRÍTICO: Trust proxy para funcionar com Nginx/aaPanel
   // Permite que o Express reconheça o protocolo HTTPS através do proxy
   app.set("trust proxy", 1);
-  
+
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
   });
-  
+
   app.use(
     expressSession({
       store: new PgStore({
@@ -23,10 +23,10 @@ export function setupAuth(app: Express) {
         tableName: "sessions",
         createTableIfMissing: false,
       }),
-      secret: process.env.SESSION_SECRET || "your-secret-key-change-in-production",
+      secret:
+        process.env.SESSION_SECRET || "your-secret-key-change-in-production",
       resave: false,
-      saveUninitialized: false,
-      proxy: true, // CRÍTICO: necessário quando atrás de proxy
+      saveUninitialized: false, // CRÍTICO: necessário quando atrás de proxy
       cookie: {
         secure: process.env.NODE_ENV === "production",
         httpOnly: true,
@@ -34,7 +34,7 @@ export function setupAuth(app: Express) {
         sameSite: process.env.NODE_ENV === "production" ? "lax" : "lax",
         // Não defina domain - deixe o navegador lidar com isso
       },
-    })
+    }),
   );
 }
 
@@ -49,6 +49,9 @@ export async function hashPassword(password: string): Promise<string> {
   return bcrypt.hash(password, 10);
 }
 
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+export async function verifyPassword(
+  password: string,
+  hash: string,
+): Promise<boolean> {
   return bcrypt.compare(password, hash);
 }
