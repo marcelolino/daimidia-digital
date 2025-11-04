@@ -395,6 +395,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/settings", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const settings = await storage.updateSystemSettings(req.body);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      res.status(500).json({ message: "Failed to update settings" });
+    }
+  });
+
   app.post("/api/analytics/page-view", async (req, res) => {
     try {
       let settings = await storage.getSystemSettings();
