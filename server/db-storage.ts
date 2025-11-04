@@ -1,6 +1,6 @@
 import { eq, or, ilike, sql } from "drizzle-orm";
 import { db } from "./db";
-import { users, media, categories, systemSettings, type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory, type SystemSettings, type InsertSystemSettings } from "@shared/schema";
+import { users, media, categories, systemSettings, services, type User, type UpsertUser, type Media, type InsertMedia, type Category, type InsertCategory, type SystemSettings, type InsertSystemSettings, type Service, type InsertService } from "@shared/schema";
 import type { IStorage } from "./storage";
 
 export class DbStorage implements IStorage {
@@ -148,6 +148,39 @@ export class DbStorage implements IStorage {
         .returning();
       return result[0];
     }
+  }
+
+  // Service methods
+  async getService(id: string): Promise<Service | undefined> {
+    const result = await db.select().from(services).where(eq(services.id, id));
+    return result[0];
+  }
+
+  async getAllServices(): Promise<Service[]> {
+    return await db.select().from(services).orderBy(sql`${services.createdAt} DESC`);
+  }
+
+  async getActiveServices(): Promise<Service[]> {
+    return await db.select().from(services).where(eq(services.status, "ativo")).orderBy(sql`${services.createdAt} DESC`);
+  }
+
+  async createService(insertService: InsertService): Promise<Service> {
+    const result = await db.insert(services).values(insertService).returning();
+    return result[0];
+  }
+
+  async updateService(id: string, updateData: Partial<InsertService>): Promise<Service | undefined> {
+    const result = await db
+      .update(services)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(services.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteService(id: string): Promise<boolean> {
+    const result = await db.delete(services).where(eq(services.id, id)).returning();
+    return result.length > 0;
   }
 }
 

@@ -538,6 +538,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Services routes
+  app.get("/api/services", async (req, res) => {
+    try {
+      const services = await storage.getActiveServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching services:", error);
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  app.get("/api/services/all", isAuthenticated, requireAdmin, async (req, res) => {
+    try {
+      const services = await storage.getAllServices();
+      res.json(services);
+    } catch (error) {
+      console.error("Error fetching all services:", error);
+      res.status(500).json({ message: "Failed to fetch services" });
+    }
+  });
+
+  app.get("/api/services/:id", async (req, res) => {
+    try {
+      const service = await storage.getService(req.params.id);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      res.json(service);
+    } catch (error) {
+      console.error("Error fetching service:", error);
+      res.status(500).json({ message: "Failed to fetch service" });
+    }
+  });
+
+  app.post("/api/services", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { insertServiceSchema } = await import("@shared/schema");
+      const validatedData = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(validatedData);
+      res.status(201).json(service);
+    } catch (error: any) {
+      console.error("Error creating service:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid service data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create service" });
+    }
+  });
+
+  app.patch("/api/services/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const { insertServiceSchema } = await import("@shared/schema");
+      const validatedData = insertServiceSchema.partial().parse(req.body);
+      const service = await storage.updateService(req.params.id, validatedData);
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+      res.json(service);
+    } catch (error: any) {
+      console.error("Error updating service:", error);
+      if (error.name === "ZodError") {
+        return res.status(400).json({ message: "Invalid service data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to update service" });
+    }
+  });
+
+  app.delete("/api/services/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+    try {
+      const service = await storage.getService(req.params.id);
+      
+      if (!service) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+
+      if (service.imageUrl) {
+        try {
+          const imagePath = path.join(process.cwd(), service.imageUrl.replace(/^\//, ''));
+          if (fs.existsSync(imagePath)) {
+            fs.unlinkSync(imagePath);
+          }
+        } catch (error) {
+          console.error("Error deleting service image:", error);
+        }
+      }
+
+      await storage.deleteService(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting service:", error);
+      res.status(500).json({ message: "Failed to delete service" });
+    }
+  });
+
+  app.post("/api/services/:id/image", isAuthenticated, requireAdmin, upload.single("image"), async (req: any, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Image file is required" });
+      }
+
+      const allowedMimeTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp", "image/svg+xml"];
+      if (!allowedMimeTypes.includes(req.file.mimetype)) {
+        fs.unlinkSync(req.file.path);
+        return res.status(400).json({ message: "Only image files are allowed (JPEG, PNG, GIF, WebP, SVG)" });
+      }
+
+      const service = await storage.getService(req.params.id);
+      if (!service) {
+        fs.unlinkSync(req.file.path);
+        return res.status(404).json({ message: "Service not found" });
+      }
+
+      if (service.imageUrl) {
+        try {
+          const oldImagePath = path.join(process.cwd(), service.imageUrl.replace(/^\//, ''));
+          if (fs.existsSync(oldImagePath)) {
+            fs.unlinkSync(oldImagePath);
+          }
+        } catch (error) {
+          console.error("Error deleting old service image:", error);
+        }
+      }
+
+      const imageUrl = `/uploads/${req.file.filename}`;
+      const updatedService = await storage.updateService(req.params.id, { imageUrl });
+      
+      res.json(updatedService);
+    } catch (error) {
+      console.error("Error uploading service image:", error);
+      res.status(500).json({ message: "Failed to upload service image" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

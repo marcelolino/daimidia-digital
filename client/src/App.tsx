@@ -14,6 +14,9 @@ import AdminEditMedia from "@/pages/AdminEditMedia";
 import AdminCategories from "@/pages/AdminCategories";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminSettings from "@/pages/AdminSettings";
+import AdminServices from "@/pages/AdminServices";
+import AdminNewService from "@/pages/AdminNewService";
+import AdminEditService from "@/pages/AdminEditService";
 
 function Router() {
   return (
@@ -24,6 +27,9 @@ function Router() {
       <Route path="/admin/media" component={AdminMediaList} />
       <Route path="/admin/new" component={AdminNewMedia} />
       <Route path="/admin/edit/:id" component={AdminEditMedia} />
+      <Route path="/admin/services" component={AdminServices} />
+      <Route path="/admin/services/new" component={AdminNewService} />
+      <Route path="/admin/services/:id/edit" component={AdminEditService} />
       <Route path="/admin/categories" component={AdminCategories} />
       <Route path="/admin/users" component={AdminUsers} />
       <Route path="/admin/settings" component={AdminSettings} />

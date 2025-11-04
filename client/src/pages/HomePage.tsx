@@ -6,8 +6,9 @@ import { MediaCard, type MediaType } from "@/components/MediaCard";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
-import type { Media, SystemSettings } from "@shared/schema";
+import type { Media, SystemSettings, Service } from "@shared/schema";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { MessageCircle, X } from "lucide-react";
 import { SiWhatsapp } from "react-icons/si";
 
@@ -32,6 +33,10 @@ export default function HomePage() {
 
   const { data: settings } = useQuery<SystemSettings>({
     queryKey: ["/api/settings"],
+  });
+
+  const { data: services = [], isLoading: servicesLoading } = useQuery<Service[]>({
+    queryKey: ["/api/services"],
   });
 
   const filteredMedia = useMemo(() => {
@@ -74,6 +79,101 @@ export default function HomePage() {
         onLogout={handleLogout}
         logoUrl={settings?.logoUrl}
       />
+
+      {services.length > 0 && (
+        <section className="py-16 bg-muted/30">
+          <div className="container mx-auto px-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl font-display font-bold mb-4">Serviços</h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto">
+                Oferecemos soluções completas para suas necessidades digitais, desde design até implementação e manutenção.
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {servicesLoading ? (
+                [...Array(3)].map((_, i) => (
+                  <div key={i} className="h-96 bg-muted animate-pulse rounded-xl" />
+                ))
+              ) : (
+                services.map((service, index) => (
+                  <motion.div
+                    key={service.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className="group"
+                    data-testid={`service-card-${index}`}
+                  >
+                    <div className="h-full bg-card border rounded-xl overflow-hidden hover-elevate transition-all duration-300">
+                      <div className="relative h-48 gradient-primary overflow-hidden">
+                        {service.imageUrl ? (
+                          <img 
+                            src={service.imageUrl} 
+                            alt={service.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center text-white p-6">
+                            <h3 className="text-2xl font-display font-bold mb-2 text-center">SERVIÇO</h3>
+                            <p className="text-sm opacity-90">Profissional</p>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <Badge 
+                          className="absolute top-4 right-4 bg-accent text-accent-foreground"
+                          data-testid={`badge-category-${index}`}
+                        >
+                          {service.category}
+                        </Badge>
+                      </div>
+
+                      <div className="p-6 space-y-4">
+                        <div>
+                          <h3 className="text-xl font-display font-bold mb-2" data-testid={`text-service-name-${index}`}>
+                            {service.name}
+                          </h3>
+                          <p className="text-sm text-muted-foreground line-clamp-3" data-testid={`text-service-description-${index}`}>
+                            {service.description}
+                          </p>
+                        </div>
+
+                        {service.technologies && service.technologies.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {service.technologies.map((tech, techIndex) => (
+                              <Badge 
+                                key={techIndex} 
+                                variant="secondary" 
+                                className="text-xs"
+                                data-testid={`badge-tech-${index}-${techIndex}`}
+                              >
+                                {tech}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="pt-4 border-t">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-muted-foreground">Preço Regular</span>
+                            <span className="text-2xl font-display font-bold text-primary" data-testid={`text-service-price-${index}`}>
+                              {service.price}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+          </div>
+        </section>
+      )}
       
       <main className="container mx-auto px-4 py-8 space-y-6">
         <div className="space-y-4">
