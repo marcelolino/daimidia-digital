@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Info, Database, Palette, Image, Upload, Download, AlertTriangle } from "lucide-react";
+import { Info, Database, Palette, Image, Upload, Download, AlertTriangle, Phone, Plus, Trash2 } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import type { SystemSettings } from "@shared/schema";
@@ -31,6 +31,9 @@ export default function AdminSettings() {
   const [backupFile, setBackupFile] = useState<File | null>(null);
   const [showRestoreDialog, setShowRestoreDialog] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [whatsappNumbers, setWhatsappNumbers] = useState<Array<{ label: string; number: string }>>([]);
+  const [newWhatsappLabel, setNewWhatsappLabel] = useState("");
+  const [newWhatsappNumber, setNewWhatsappNumber] = useState("");
 
   const { data: settings } = useQuery<SystemSettings>({
     queryKey: ["/api/settings"],
@@ -58,6 +61,34 @@ export default function AdminSettings() {
       });
     },
   });
+
+  const updateWhatsappMutation = useMutation({
+    mutationFn: async (numbers: Array<{ label: string; number: string }>) => {
+      return apiRequest("PATCH", "/api/settings", {
+        whatsappNumbers: numbers,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/settings"] });
+      toast({
+        title: "Números atualizados",
+        description: "Os números de WhatsApp foram atualizados com sucesso!",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível atualizar os números de WhatsApp.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (settings?.whatsappNumbers) {
+      setWhatsappNumbers(settings.whatsappNumbers as Array<{ label: string; number: string }>);
+    }
+  }, [settings]);
 
   useEffect(() => {
     if (!isLoading && (!isAuthenticated || user?.role !== "admin")) {
@@ -89,6 +120,49 @@ export default function AdminSettings() {
     if (logoFile) {
       uploadLogoMutation.mutate(logoFile);
     }
+  };
+
+  const handleAddWhatsappNumber = () => {
+    if (!newWhatsappLabel.trim() || !newWhatsappNumber.trim()) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha o nome e o número do WhatsApp.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const cleanNumber = newWhatsappNumber.replace(/\D/g, "");
+    
+    if (cleanNumber.length < 12 || cleanNumber.length > 13) {
+      toast({
+        title: "Número inválido",
+        description: "Digite um número completo: 55 + DDD + número (12-13 dígitos).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!cleanNumber.startsWith("55")) {
+      toast({
+        title: "Código do país inválido",
+        description: "O número deve começar com 55 (Brasil).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const updatedNumbers = [...whatsappNumbers, { label: newWhatsappLabel, number: cleanNumber }];
+    setWhatsappNumbers(updatedNumbers);
+    updateWhatsappMutation.mutate(updatedNumbers);
+    setNewWhatsappLabel("");
+    setNewWhatsappNumber("");
+  };
+
+  const handleRemoveWhatsappNumber = (index: number) => {
+    const updatedNumbers = whatsappNumbers.filter((_, i) => i !== index);
+    setWhatsappNumbers(updatedNumbers);
+    updateWhatsappMutation.mutate(updatedNumbers);
   };
 
   const handleExportSQL = async () => {
@@ -405,6 +479,83 @@ export default function AdminSettings() {
                         {uploadLogoMutation.isPending ? "Enviando..." : "Fazer Upload"}
                       </Button>
                     </form>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-5 w-5" />
+                      <CardTitle>Números de WhatsApp</CardTitle>
+                    </div>
+                    <CardDescription>
+                      Configure os números de WhatsApp que aparecerão na página inicial
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {whatsappNumbers.length > 0 && (
+                      <div className="space-y-2">
+                        {whatsappNumbers.map((item, index) => (
+                          <div 
+                            key={index} 
+                            className="flex items-center justify-between gap-2 p-3 border rounded-lg"
+                            data-testid={`whatsapp-number-${index}`}
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{item.label}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {item.number.replace(/(\d{2})(\d{2})(\d{4,5})(\d{4})/, "+$1 ($2) $3-$4")}
+                              </p>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRemoveWhatsappNumber(index)}
+                              data-testid={`button-remove-whatsapp-${index}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="space-y-3 pt-3 border-t">
+                      <p className="text-sm font-medium">Adicionar novo número</p>
+                      <div className="grid gap-3">
+                        <div className="space-y-2">
+                          <Label htmlFor="whatsapp-label">Nome/Identificação</Label>
+                          <Input
+                            id="whatsapp-label"
+                            placeholder="Ex: Atendimento, Vendas, Suporte"
+                            value={newWhatsappLabel}
+                            onChange={(e) => setNewWhatsappLabel(e.target.value)}
+                            data-testid="input-whatsapp-label"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="whatsapp-number">Número com DDD (Brasil)</Label>
+                          <Input
+                            id="whatsapp-number"
+                            placeholder="Ex: 5511999998888"
+                            value={newWhatsappNumber}
+                            onChange={(e) => setNewWhatsappNumber(e.target.value)}
+                            data-testid="input-whatsapp-number"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Digite com código do país: 55 + DDD + número (Ex: 5511999998888)
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={handleAddWhatsappNumber}
+                          disabled={updateWhatsappMutation.isPending}
+                          data-testid="button-add-whatsapp"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Adicionar Número
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>

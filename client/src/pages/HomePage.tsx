@@ -3,15 +3,19 @@ import { Navbar } from "@/components/Navbar";
 import { FilterBar } from "@/components/FilterBar";
 import { SearchInput } from "@/components/SearchInput";
 import { MediaCard, type MediaType } from "@/components/MediaCard";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import type { Media, SystemSettings } from "@shared/schema";
+import { Button } from "@/components/ui/button";
+import { MessageCircle, X } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 
 export default function HomePage() {
   const { user, isAuthenticated } = useAuth();
   const [selectedType, setSelectedType] = useState<MediaType | "all">("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showWhatsappMenu, setShowWhatsappMenu] = useState(false);
 
   useEffect(() => {
     fetch("/api/analytics/page-view", {
@@ -43,6 +47,22 @@ export default function HomePage() {
 
   const handleLogout = () => {
     window.location.href = "/api/logout";
+  };
+
+  const whatsappNumbers = (settings?.whatsappNumbers as Array<{ label: string; number: string }>) || [];
+
+  const handleWhatsappClick = (number: string) => {
+    const whatsappUrl = `https://wa.me/${number}`;
+    window.open(whatsappUrl, "_blank");
+    setShowWhatsappMenu(false);
+  };
+
+  const handleWhatsappButtonClick = () => {
+    if (whatsappNumbers.length === 1) {
+      handleWhatsappClick(whatsappNumbers[0].number);
+    } else {
+      setShowWhatsappMenu(!showWhatsappMenu);
+    }
   };
 
   return (
@@ -118,6 +138,67 @@ export default function HomePage() {
           </motion.div>
         )}
       </main>
+
+      {whatsappNumbers.length > 0 && (
+        <>
+          <AnimatePresence>
+            {showWhatsappMenu && whatsappNumbers.length > 1 && (
+              <motion.div
+                initial={{ opacity: 0, y: 20, scale: 0.9 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.9 }}
+                className="fixed bottom-24 right-6 bg-card border rounded-lg shadow-lg p-3 space-y-2 z-40"
+                data-testid="whatsapp-menu"
+              >
+                <div className="flex items-center justify-between mb-2 pb-2 border-b">
+                  <p className="text-sm font-medium">Escolha um contato</p>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => setShowWhatsappMenu(false)}
+                    data-testid="button-close-whatsapp-menu"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                {whatsappNumbers.map((item, index) => (
+                  <Button
+                    key={index}
+                    variant="outline"
+                    className="w-full justify-start gap-2"
+                    onClick={() => handleWhatsappClick(item.number)}
+                    data-testid={`button-whatsapp-contact-${index}`}
+                  >
+                    <SiWhatsapp className="h-5 w-5 text-green-500" />
+                    <div className="text-left">
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.number.replace(/(\d{2})(\d{2})(\d{4,5})(\d{4})/, "+$1 ($2) $3-$4")}
+                      </p>
+                    </div>
+                  </Button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            className="fixed bottom-6 right-6 z-50"
+          >
+            <Button
+              size="icon"
+              className="h-14 w-14 rounded-full bg-green-500 hover:bg-green-600 shadow-lg"
+              onClick={handleWhatsappButtonClick}
+              data-testid="button-whatsapp-float"
+            >
+              <SiWhatsapp className="h-7 w-7 text-white" />
+            </Button>
+          </motion.div>
+        </>
+      )}
     </div>
   );
 }

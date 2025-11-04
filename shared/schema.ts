@@ -77,6 +77,7 @@ export const systemSettings = pgTable("system_settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   logoUrl: text("logo_url"),
   pageViews: integer("page_views").notNull().default(0),
+  whatsappNumbers: jsonb("whatsapp_numbers").default(sql`'[]'::jsonb`),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
